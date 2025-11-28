@@ -4,7 +4,7 @@
  */
 
 import { state } from './state.js';
-import { escapeHTML, highlightText } from './utils.js';
+import { escapeHTML, highlightText, getLocalDate } from './utils.js';
 import { photoDB } from './db.js';
 
 // --- REFERENCIAS AL DOM (Centralizadas) ---
@@ -123,7 +123,16 @@ export const elements = {
         userFilter: document.getElementById('report-user-filter'),
         reportButtons: document.querySelectorAll('.report-btn'),
         exportXlsxBtn: document.getElementById('export-xlsx-btn'),
-        exportLabelsXlsxBtn: document.getElementById('export-labels-xlsx-btn')
+        exportLabelsXlsxBtn: document.getElementById('export-labels-xlsx-btn'),
+        reportViewModal: {
+            modal: document.getElementById('report-view-modal'),
+            title: document.getElementById('report-view-title'),
+            content: document.getElementById('report-view-content'),
+            tableHead: document.getElementById('report-view-table-head'),
+            tableBody: document.getElementById('report-view-table-body'),
+            closeBtn: document.getElementById('report-view-close-btn'),
+            closeFooterBtn: document.getElementById('report-view-close-footer-btn')
+        }
     },
 
     // Ajustes
@@ -235,7 +244,7 @@ export const elements = {
             notaBtn: document.getElementById('detail-view-nota-btn'),
             fotoBtn: document.getElementById('detail-view-foto-btn')
         },
-        reportView: {
+        reportView: { // Duplicado intencional por compatibilidad si es necesario
             modal: document.getElementById('report-view-modal'),
             title: document.getElementById('report-view-title'),
             content: document.getElementById('report-view-content'),
@@ -299,6 +308,14 @@ export const elements = {
             applyBtn: document.getElementById('reconciliation-apply-btn'),
             closeBtn: document.getElementById('reconciliation-close-btn'),
             cancelBtn: document.getElementById('reconciliation-cancel-btn')
+        },
+        preprint: {
+            modal: document.getElementById('preprint-edit-modal'),
+            title: document.getElementById('preprint-title'),
+            fieldsContainer: document.getElementById('preprint-fields'),
+            dateInput: document.getElementById('preprint-date'),
+            confirmBtn: document.getElementById('preprint-confirm-btn'),
+            cancelBtn: document.getElementById('preprint-cancel-btn')
         }
     },
 
@@ -388,14 +405,13 @@ export function showConfirmationModal(title, text, onConfirm, options = {}) {
     
     modal.classList.add('show');
     
-    // Cleanup previo para evitar eventos duplicados
     const cleanup = handleModalNavigation(modal);
 
     const closeModal = () => {
         modal.classList.remove('show');
         confirmBtn.removeEventListener('click', confirmHandler);
         cancelBtn.removeEventListener('click', cancelHandler);
-        cleanup(); // Remover listeners de teclado
+        cleanup(); 
     };
 
     const confirmHandler = () => {
@@ -422,7 +438,6 @@ export function handleModalNavigation(modalElement) {
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
     
-    // Enfocar el primer elemento al abrir
     setTimeout(() => firstElement.focus(), 50);
 
     const keydownHandler = (e) => {
@@ -435,7 +450,6 @@ export function handleModalNavigation(modalElement) {
                 e.preventDefault();
             }
         } else if (e.key === 'Escape') {
-            // Buscar cualquier botón de cancelar/cerrar común
             const cancelBtn = modalElement.querySelector('.close-modal-btn, #modal-cancel, #note-cancel-btn, #photo-close-btn, #edit-adicional-cancel-btn, #edit-user-cancel-btn, #log-close-btn, #preprint-cancel-btn, #layout-close-btn');
             if (cancelBtn) cancelBtn.click();
         }
@@ -477,12 +491,11 @@ export function toggleReadOnlyMode(isReadOnly) {
     if (isReadOnly) {
         elements.readOnlyOverlay.classList.remove('hidden');
         document.querySelectorAll('button:not(.close-modal-btn), input, select, textarea').forEach(el => {
-            // Lista blanca de elementos que SÍ deben funcionar en modo lectura (navegación, cierre)
             if (el.closest('.modal-content') && (el.id.includes('close') || el.id.includes('cancel'))) return;
             if (el.classList.contains('tab-btn')) return;
             if (el.id === 'dashboard-toggle-btn') return;
-            if (el.id === 'logout-btn') return; // Permitir salir
-            if (el.id === 'export-session-btn') return; // Permitir exportar backup
+            if (el.id === 'logout-btn') return; 
+            if (el.id === 'export-session-btn') return; 
 
             el.disabled = true;
             el.classList.add('opacity-60', 'cursor-not-allowed');
@@ -498,10 +511,6 @@ export function toggleReadOnlyMode(isReadOnly) {
 
 // --- RENDERIZADORES COMPLEJOS ---
 
-/**
- * Genera el HTML de una fila de la tabla de inventario.
- * Se exporta para ser usado por inventory.js
- */
 export function createInventoryRowElement(item, searchTerm = '', isEditMode = false) {
     const clave = item['CLAVE UNICA'] || '';
     const descripcion = item['DESCRIPCION'] || '';
@@ -522,7 +531,6 @@ export function createInventoryRowElement(item, searchTerm = '', isEditMode = fa
     
     const mismatchTag = item.areaIncorrecta ? `<span class="mismatched-area-tag" title="Ubicado en el área de otro listado">⚠️</span>` : '';
     
-    // Obtener info del usuario para tooltip
     const userData = state.resguardantes.find(u => u.name === usuario);
     let locationDisplay = '';
     if (item.ubicacionEspecifica) {
@@ -537,7 +545,6 @@ export function createInventoryRowElement(item, searchTerm = '', isEditMode = fa
     
     const truncate = (str, len) => (str && String(str).length > len ? String(str).substring(0, len) + '...' : str || '');
 
-    // Helpers de edición
     const editClass = isEditMode ? 'inventory-editable-cell' : '';
     const contentEditableAttr = isEditMode ? 'contenteditable="true"' : '';
     
@@ -583,4 +590,168 @@ export function createInventoryRowElement(item, searchTerm = '', isEditMode = fa
         </td>`;
     
     return row;
+}
+
+// --- MODAL DE PRE-IMPRESIÓN (AÑADIDO PARA SOLUCIONAR EL ERROR) ---
+
+export function showPreprintModal(reportType, data = {}) {
+    const { modal, title, fieldsContainer, confirmBtn, cancelBtn, dateInput } = elements.modals.preprint;
+    let fieldsHtml = '';
+    let defaultValues = {};
+    let titleText = '';
+
+    const selectedArea = data.filterArea || elements.reports.areaFilter.value;
+    const selectedUser = data.filterUser || elements.reports.userFilter.value;
+    
+    const areaId = data.areaId || (selectedArea !== 'all' ? selectedArea : (state.resguardantes.find(u => u.name === selectedUser)?.area || null));
+    const areaResponsibleData = areaId ? state.areaDirectory[areaId] : null;
+
+    dateInput.value = getLocalDate();
+
+    // Configuración del modal según tipo
+    switch (reportType) {
+        case 'session_summary':
+            titleText = 'Generar Resumen de Sesión';
+            defaultValues = {
+                author: elements.settings.summaryAuthor.value.trim(),
+                areaResponsible: elements.settings.summaryAreaResponsible.value.trim(),
+                location: elements.settings.summaryLocation.value.trim()
+            };
+            fieldsHtml = `
+                <div><label class="block text-sm font-medium">Ubicación Física del Inventario:</label><input type="text" id="preprint-location" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.location}"></div>
+                <div><label class="block text-sm font-medium">Realizado por (Entrega):</label><input type="text" id="preprint-author" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.author}"></div>
+                <div><label class="block text-sm font-medium">Responsable del Área (Recibe):</label><input type="text" id="preprint-areaResponsible" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.areaResponsible}"></div>
+            `;
+            break;
+        case 'tasks_report':
+            titleText = 'Generar Plan de Acción';
+            fieldsHtml = `<div class="p-3 bg-blue-50 text-blue-800 rounded-lg text-sm"><i class="fa-solid fa-info-circle mr-2"></i>Se generará un documento PDF con las tareas pendientes.</div>`;
+            break;
+        case 'area_closure':
+            titleText = 'Generar Acta de Cierre de Área';
+            defaultValues = {
+                areaId: data.areaId,
+                responsible: data.responsible || (areaResponsibleData?.name || ''), 
+                location: data.location || '',
+                areaFullName: state.areaNames[data.areaId] || `Área ${data.areaId}`,
+                entrega: state.currentUser.name,
+                recibe: data.responsible || (areaResponsibleData?.name || ''), 
+                recibeCargo: areaResponsibleData?.title || 'Responsable de Área'
+            };
+            fieldsHtml = `
+                <div><label class="block text-sm font-medium">Nombre Completo del Área:</label><input type="text" id="preprint-areaFullName" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.areaFullName}"></div>
+                <div><label class="block text-sm font-medium">Ubicación de Firma:</label><input type="text" id="preprint-location" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.location}" placeholder="Ej. Oficina 1..."></div>
+                <div><label class="block text-sm font-medium">Entrega (Inventario):</label><input type="text" id="preprint-entrega" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.entrega}"></div>
+                <div><label class="block text-sm font-medium">Recibe de Conformidad:</label><input type="text" id="preprint-recibe" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.recibe}" placeholder="Nombre completo"></div>
+                <div><label class="block text-sm font-medium">Cargo de Quien Recibe:</label><input type="text" id="preprint-recibeCargo" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.recibeCargo}"></div>
+            `;
+            break;
+        case 'simple_pending':
+            titleText = 'Imprimir Reporte de Pendientes';
+            defaultValues = {
+                areaDisplay: selectedArea !== 'all' ? `${state.areaNames[selectedArea] || selectedArea}` : 'Todas las Áreas', 
+                entrega: state.currentUser.name,
+                recibe: "_________________________"
+            };
+            fieldsHtml = `
+                <div><label class="block text-sm font-medium">Reporte para:</label><input type="text" id="preprint-areaDisplay" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.areaDisplay}"></div>
+                <div><label class="block text-sm font-medium">Realizó (Entrega):</label><input type="text" id="preprint-entrega" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.entrega}"></div>
+                <div><label class="block text-sm font-medium">Recibe Copia:</label><input type="text" id="preprint-recibe" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.recibe}"></div>
+            `;
+            break;
+        case 'individual_resguardo':
+        case 'adicionales_informe':
+            titleText = 'Imprimir Resguardo';
+            const isAdicional = reportType === 'adicionales_informe';
+            const isForArea = data.isForArea || false;
+            const isForUser = data.isForUser || false;
+
+            let userForReport = 'Usuario';
+            if (isAdicional) {
+                userForReport = isForUser ? selectedUser : (isForArea ? `Responsables del Área ${areaId}` : 'Todas las Áreas');
+            } else { 
+                userForReport = selectedUser !== 'all' ? selectedUser : '_________________________'; 
+            }
+            
+            const entregaValue = areaResponsibleData?.name || '_________________________';
+            const receiverName = (isForArea && isAdicional) ? entregaValue : userForReport;
+
+            defaultValues = {
+                areaFullName: areaId ? (state.areaNames[areaId] || `Área ${areaId}`) : 'Todas las Áreas', 
+                entrega: entregaValue,
+                recibe: receiverName, 
+                recibeCargo: areaResponsibleData?.title || 'Responsable de Área',
+                isForArea: isForArea,
+                isForUser: isForUser
+            };
+            fieldsHtml = `
+                <div><label class="block text-sm font-medium">Nombre Completo del Área:</label><input type="text" id="preprint-areaFullName" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.areaFullName}"></div>
+                <div><label class="block text-sm font-medium">Responsable del Área (Entrega):</label><input type="text" id="preprint-entrega" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.entrega}"></div>
+                <div><label class="block text-sm font-medium">Firma de Conformidad (Recibe):</label><input type="text" id="preprint-recibe" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.recibe}"></div>
+                <div><label class="block text-sm font-medium">Cargo de Quien Entrega:</label><input type="text" id="preprint-recibeCargo" class="mt-1 block w-full p-2 border rounded-md" value="${defaultValues.recibeCargo}"></div>
+            `;
+            break;
+    }
+
+    title.textContent = titleText;
+    fieldsContainer.innerHTML = fieldsHtml; 
+    modal.classList.add('show');
+    
+    // Limpieza de eventos anteriores
+    const cleanupNav = handleModalNavigation(modal);
+    const safeClose = () => {
+        modal.classList.remove('show');
+        cleanupNav();
+        cancelBtn.onclick = null;
+        confirmBtn.onclick = null;
+    };
+
+    cancelBtn.onclick = safeClose;
+
+    // Manejar confirmación con IMPORTACIÓN DINÁMICA para evitar ciclo
+    confirmBtn.onclick = async () => {
+        const updatedOptions = { ...defaultValues };
+        updatedOptions.date = dateInput.value.trim() || getLocalDate(); 
+
+        fieldsContainer.querySelectorAll('input').forEach(input => {
+            const key = input.id.replace('preprint-', '');
+            updatedOptions[key] = input.value;
+        });
+
+        // Importación dinámica de reports.js para romper la dependencia circular
+        const reportsModule = await import('./reports.js');
+
+        switch (reportType) {
+            case 'session_summary':
+                reportsModule.generateSessionSummary(updatedOptions);
+                break;
+            case 'tasks_report':
+                reportsModule.generateTasksReport(updatedOptions);
+                break;
+            case 'area_closure':
+                reportsModule.generateAreaClosureReport(updatedOptions);
+                break;
+            case 'simple_pending':
+                reportsModule.generateSimplePendingReport(updatedOptions);
+                break;
+            case 'individual_resguardo':
+                 const items = data.items || state.inventory.filter(item => item['NOMBRE DE USUARIO'] === selectedUser);
+                 const t = data.title || 'Resguardo Individual de Bienes';
+                 const isAd = data.isAdicional || false; 
+                 reportsModule.generatePrintableResguardo(t, updatedOptions.recibe, items, isAd, updatedOptions);
+                 break;
+            case 'adicionales_informe':
+                let itemsToPrint = state.additionalItems;
+                if (selectedArea !== 'all') {
+                    const usersInArea = state.resguardantes.filter(u => u.area === selectedArea).map(u => u.name);
+                    itemsToPrint = itemsToPrint.filter(item => usersInArea.includes(item.usuario));
+                }
+                if (selectedUser !== 'all') {
+                    itemsToPrint = itemsToPrint.filter(item => item.usuario === selectedUser);
+                } 
+                reportsModule.generatePrintableResguardo('Mobiliario y Equipo Ubicado de Manera Adicional Global', updatedOptions.recibe, itemsToPrint, true, updatedOptions);
+                break;
+        }
+        safeClose();
+    };
 }
