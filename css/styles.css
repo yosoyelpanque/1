@@ -1,0 +1,466 @@
+/* --- ESTILOS GENERALES Y UTILIDADES --- */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6;
+    transition: background-color 0.3s;
+}
+
+/* Scrollbar personalizada para contenedores */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Efecto Vidrio (Glassmorphism) */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
+/* Botón Gradiente */
+.btn-gradient {
+    background-image: linear-gradient(to right, #6366f1, #8b5cf6, #a855f7);
+    color: white;
+    transition: all 0.3s ease;
+    background-size: 200% auto;
+}
+.btn-gradient:hover {
+    background-position: right center;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+.btn-gradient:disabled {
+    background-image: linear-gradient(to right, #a5b4fc, #c4b5fd, #d8b4fe);
+    cursor: not-allowed;
+}
+
+/* Botones de Acción (Iconos redondos) */
+.action-btn {
+    background: rgba(0,0,0,0.05);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.action-btn:hover {
+    background: rgba(0,0,0,0.1);
+    transform: scale(1.1);
+}
+
+/* --- MODO OSCURO (DARK MODE) --- */
+.dark-mode {
+    background-color: #0f172a; 
+    color: #e2e8f0; 
+}
+.dark-mode .glass-effect {
+    background: rgba(30, 41, 59, 0.5); 
+    backdrop-filter: blur(12px);
+    border: 1px solid #334155; 
+}
+.dark-mode .bg-white { background-color: #1e293b; } 
+.dark-mode .bg-gray-50 { background-color: #334155; } 
+.dark-mode .bg-gray-100 { background-color: #334155; } 
+.dark-mode .text-gray-500 { color: #94a3b8; } 
+.dark-mode .text-gray-600 { color: #cbd5e1; } 
+.dark-mode .text-gray-700 { color: #e2e8f0; } 
+.dark-mode .text-gray-800 { color: #f1f5f9; } 
+.dark-mode .text-gray-900 { color: #ffffff; }
+.dark-mode .border-gray-300 { border-color: #475569; } 
+.dark-mode .divide-gray-200 { border-color: #475569; } 
+.dark-mode .hover\:bg-gray-50:hover { background-color: #334155; } 
+.dark-mode input, .dark-mode select, .dark-mode textarea {
+    background-color: #334155; 
+    color: #e2e8f0; 
+    border-color: #475569; 
+}
+.dark-mode input::placeholder, .dark-mode textarea::placeholder {
+    color: #94a3b8; 
+}
+.dark-mode .action-btn { background: rgba(255,255,255,0.1); }
+.dark-mode .action-btn:hover { background: rgba(255,255,255,0.2); }
+.dark-mode .modal-overlay { background-color: rgba(15, 23, 42, 0.5); }
+
+/* --- PESTAÑAS (TABS) --- */
+#tabs-container-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 990;
+    background-color: rgba(243, 244, 246, 0.8);
+    backdrop-filter: blur(8px);
+}
+.dark-mode #tabs-container-wrapper {
+    background-color: rgba(15, 23, 42, 0.8);
+}
+.tab-btn.active {
+    border-color: #6366f1;
+    color: #6366f1;
+    font-weight: 700;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.5s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+#main-tabs-group {
+    flex-grow: 1;
+    display: flex;
+    justify-content: space-around;
+}
+
+/* Fondos de Pestañas (Colores suaves) */
+.glass-effect.bg-tab-users { background-color: rgba(239, 246, 255, 0.7); }
+.glass-effect.bg-tab-inventory { background-color: rgba(240, 253, 244, 0.7); }
+.glass-effect.bg-tab-adicionales { background-color: rgba(254, 252, 232, 0.7); }
+.glass-effect.bg-tab-reports { background-color: rgba(253, 242, 248, 0.7); }
+.glass-effect.bg-tab-settings { background-color: rgba(250, 250, 249, 0.7); }
+
+.dark-mode .glass-effect.bg-tab-users { background-color: rgba(30, 58, 138, 0.2); }
+.dark-mode .glass-effect.bg-tab-inventory { background-color: rgba(22, 101, 52, 0.2); }
+.dark-mode .glass-effect.bg-tab-adicionales { background-color: rgba(113, 63, 18, 0.2); }
+.dark-mode .glass-effect.bg-tab-reports { background-color: rgba(131, 24, 67, 0.2); }
+.dark-mode .glass-effect.bg-tab-settings { background-color: rgba(82, 82, 91, 0.2); }
+
+/* --- MODALES --- */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.4); 
+    backdrop-filter: blur(4px); 
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal-content {
+    transform: scale(0.95);
+    transition: transform 0.3s;
+    max-height: 90vh; /* Prevenir desborde vertical */
+    overflow-y: auto;
+}
+.modal-overlay.show .modal-content { transform: scale(1); }
+
+/* Z-Indexes Específicos */
+#item-detail-view-modal { z-index: 1030; } 
+#photo-modal { z-index: 1040; }
+#transfer-photo-modal { z-index: 1050; }
+#log-modal { z-index: 1060; }
+#notes-modal { z-index: 1070; }
+#preprint-edit-modal { z-index: 1080; }
+#layout-editor-modal { z-index: 1090; }
+#confirmation-modal { z-index: 1100; }
+#report-view-modal { z-index: 1020; }
+
+/* --- COMPONENTES UI ESPECÍFICOS --- */
+
+/* Barra de Progreso */
+.progress-bar-container {
+    width: 100%;
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+.dark-mode .progress-bar-container { background-color: #4b5563; }
+#import-progress-bar {
+    height: 1.25rem;
+    width: 0%;
+    background-color: #4f46e5;
+    transition: width 0.3s ease-in-out;
+    text-align: center;
+    color: white;
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+}
+
+/* Tooltip */
+#progress-tooltip {
+    position: fixed;
+    display: none;
+    padding: 10px 15px;
+    background-color: #1f2937; 
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    font-size: 0.8rem;
+    z-index: 9999;
+    pointer-events: none; 
+    max-width: 300px;
+}
+
+/* Toast Notification */
+.toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2000;
+}
+
+/* Dashboard Toggle */
+#header-and-dashboard {
+    transition: max-height 0.7s, opacity 0.5s, margin-bottom 0.7s;
+    max-height: 1000px;
+    overflow: hidden;
+    opacity: 1;
+    margin-bottom: 2rem; 
+}
+#header-and-dashboard.hidden {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+}
+#dashboard-toggle { transition: transform 0.3s; }
+#header-and-dashboard.hidden + #dashboard-toggle-container #dashboard-toggle { transform: rotate(180deg); }
+
+/* --- INVENTARIO Y TABLAS --- */
+.inventory-table-container { overflow-x: auto; }
+.has-note { background-color: #fffbeb; }
+.dark-mode .has-note { background-color: #4a4a2a; }
+.item-located { background-color: #f0fdf4; }
+.dark-mode .item-located { background-color: rgba(22, 163, 74, 0.1); }
+.note-icon:hover { color: #f59e0b; }
+
+/* Celdas Editables */
+.inventory-editable-cell {
+    border: 2px dashed #cbd5e1;
+    background-color: #ffffff;
+    cursor: text !important;
+    transition: all 0.2s;
+    padding: 2px 4px;
+    min-height: 24px;
+}
+.inventory-editable-cell:focus {
+    border: 2px solid #6366f1;
+    background-color: #eef2ff;
+    outline: none;
+}
+.dark-mode .inventory-editable-cell {
+    border-color: #475569;
+    background-color: #1e293b;
+}
+.dark-mode .inventory-editable-cell:focus {
+    background-color: #0f172a;
+    border-color: #818cf8;
+}
+
+/* Etiquetas de Usuario y Ubicación */
+.location-chip {
+    display: inline-flex;
+    align-items: center;
+    background-color: #e0e7ff;
+    color: #3730a3;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    border: 1px solid #c7d2fe;
+}
+.dark-mode .location-chip {
+    background-color: #312e81;
+    color: #c7d2fe;
+    border-color: #4338ca;
+}
+
+.active-user { background-color: #dcfce7; color: #166534; }
+.dark-mode .active-user { background-color: #14532d; color: #bbf7d0; }
+.non-active-user { background-color: #eff6ff; }
+.dark-mode .non-active-user { background-color: #1e293b; }
+
+.additional-item { background-color: #f0fdf4; color: #16a34a; border-color: #4ade80; }
+.dark-mode .additional-item { background-color: #052e16; color: #86efac; border-color: #22c55e; }
+.personal-item { background-color: #fefce8; color: #ca8a04; border-color: #facc15; }
+.dark-mode .personal-item { background-color: #422006; color: #fde047; border-color: #eab308; }
+
+/* Directorio Editable */
+.editable-field {
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+.editable-field:hover { background-color: #f0f0f0; }
+.dark-mode .editable-field:hover { background-color: #334155; }
+.editable-field[contenteditable="true"] {
+    background-color: #fff;
+    color: #1f2937;
+    outline: 2px solid #6366f1;
+    cursor: text;
+}
+.dark-mode .editable-field[contenteditable="true"] { background-color: #e2e8f0; }
+
+/* --- CONCILIACIÓN Y DIFERENCIAS --- */
+.diff-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background-color: #fff;
+}
+.dark-mode .diff-card {
+    border-color: #475569;
+    background-color: #1e293b;
+}
+.diff-new { border-left: 4px solid #22c55e; }
+.diff-del { border-left: 4px solid #ef4444; }
+.diff-mod { border-left: 4px solid #f97316; }
+.diff-old-val { text-decoration: line-through; opacity: 0.6; font-size: 0.85em; color: #ef4444; }
+.diff-new-val { font-weight: bold; color: #22c55e; }
+.diff-stats-box { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.diff-stat { flex: 1; padding: 1rem; border-radius: 0.5rem; text-align: center; color: white; font-weight: bold; }
+
+/* --- EDITOR DE CROQUIS (LAYOUT) --- */
+#layout-canvas-wrapper {
+    width: 100%; height: 100%; overflow: auto; position: relative; background-color: #f0f0f0;
+}
+#layout-canvas {
+    width: 720px; height: 960px;
+    background-color: #ffffff;
+    background-image: linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    position: relative;
+    margin: 20px auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
+}
+.dark-mode #layout-canvas {
+    background-color: #1e293b;
+    background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    border-color: #334155;
+}
+
+.layout-shape {
+    padding: 8px 12px 8px 22px;
+    position: relative;
+    border-radius: 8px;
+    border: 2px solid #6366f1;
+    background-color: rgba(238, 242, 255, 0.9);
+    cursor: move;
+    width: 180px; min-height: 60px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    touch-action: none;
+    z-index: 1091;
+    box-sizing: border-box;
+}
+.layout-on-canvas { position: absolute; }
+.area-color-dot {
+    position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+    width: 10px; height: 10px; border-radius: 9999px; border: 1px solid rgba(0,0,0,0.2);
+}
+
+/* Herramientas del Croquis */
+.layout-shape.tool-note {
+    background-color: rgba(255, 251, 235, 0.9);
+    border: 2px solid #f59e0b;
+    color: #b45309;
+}
+.layout-shape.tool-text {
+    background-color: transparent;
+    border: 2px dashed #9ca3af;
+    box-shadow: none;
+}
+.layout-shape.tool-image {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: 2px dashed #a5b4fc;
+    background-color: rgba(245, 245, 245, 0.8);
+}
+.layout-shape-note-textarea, .layout-shape-text-textarea {
+    width: 100%; height: 100%;
+    background: transparent; border: none; resize: none;
+    outline: none; font-family: inherit;
+}
+
+/* Controles Flotantes del Croquis */
+.layout-delete-btn, .layout-rotate-handle {
+    position: absolute; width: 24px; height: 24px;
+    border-radius: 9999px; color: white;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; opacity: 0; transition: opacity 0.2s;
+    z-index: 1093; border: 2px solid white; font-size: 0.8rem;
+}
+.layout-delete-btn { top: -10px; right: -10px; background-color: #ef4444; }
+.layout-rotate-handle { bottom: -10px; right: -10px; background-color: #6366f1; cursor: alias; }
+.layout-shape:hover .layout-delete-btn, .layout-shape:hover .layout-rotate-handle { opacity: 1; }
+
+#layout-pagination-controls {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; background: rgba(255, 255, 255, 0.9);
+    padding: 4px 12px; border-radius: 99px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15); z-index: 1095;
+}
+
+/* --- VISTA DE CÁMARA Y VIDEO --- */
+#camera-stream {
+    width: 100%; height: auto; border-radius: 0.5rem;
+}
+
+/* --- OVERLAY MODO LECTURA --- */
+.read-only-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 10000; pointer-events: none;
+    display: flex; justify-content: center; align-items: flex-start; padding-top: 20px;
+}
+.read-only-banner {
+    background-color: #ef4444; color: white; padding: 10px 20px;
+    border-radius: 8px; font-weight: bold;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); pointer-events: auto;
+}
+
+/* --- ESTILOS DE IMPRESIÓN (PRINT) --- */
+#print-view-container { display: none; color: #000; }
+
+@media print {
+    body > * { display: none !important; }
+    #print-view-container { 
+        display: block !important; 
+        position: static; width: 100%; height: auto; 
+    }
+    .print-page { 
+        display: block; width: 100%; height: auto; 
+        page-break-after: always; 
+        position: relative;
+    }
+    .print-page:last-child { page-break-after: auto; }
+    .print-page.active { visibility: visible; }
+    
+    @page { size: letter; margin: 0.5in; }
+    
+    /* Ocultar elementos de UI en impresión */
+    .layout-delete-btn, .layout-rotate-handle { display: none !important; }
+    
+    /* Ajustes específicos para tablas impresas */
+    .print-table {
+        width: 100%; border-collapse: collapse; font-size: 7pt;
+        table-layout: fixed;
+    }
+    .print-table th, .print-table td {
+        border: 1px solid #ccc; padding: 4px;
+        word-wrap: break-word;
+    }
+    .print-header {
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 10px;
+    }
+    .print-header img { max-height: 50px; }
+    .print-signatures {
+        display: flex; justify-content: space-around; margin-top: 60px;
+        page-break-inside: avoid;
+    }
+    .print-signature-line {
+        border-bottom: 1px solid #000; margin-bottom: 5px; height: 30px;
+    }
+}
